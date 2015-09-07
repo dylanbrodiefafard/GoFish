@@ -40,7 +40,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CardId.cs" />
-    <Compile Include="Room.cs" />
     <Compile Include="Client.cs" />
     <Compile Include="Exceptions\DirtyDeckException.cs" />
     <Compile Include="Exceptions\DirtyHandException.cs" />
@@ -48,21 +47,19 @@
     <Compile Include="GenericEventArgs.cs" />
     <Compile Include="Handshake.cs" />
     <Compile Include="IClientHandler.cs" />
-    <Compile Include="IPerformer.cs" />
     <Compile Include="IPlayer.cs" />
+    <Compile Include="MessageHandler.cs" />
     <Compile Include="Player.cs" />
     <Compile Include="PlayingCards\CardIdentities.cs" />
     <Compile Include="PlayingCards\CardIdentity.cs" />
     <Compile Include="PlayingCards\CardSuit.cs" />
     <Compile Include="PlayingCards\CardSuits.cs" />
     <Compile Include="DeckBase.cs" />
-    <Compile Include="Extensions.cs" />
     <Compile Include="ICard.cs" />
     <Compile Include="ICardSet.cs" />
     <Compile Include="PlayingCards\PlayingCard.cs" />
     <Compile Include="PlayingCards\PlayingCardDeck.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="RoomAction.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

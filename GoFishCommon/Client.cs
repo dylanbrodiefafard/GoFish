@@ -5,7 +5,6 @@ using System.Net.Sockets;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading;
-using RoomList = System.Collections.Generic.Dictionary<System.String, GoFishCommon.Room>;
 
 namespace GoFishCommon
 {
@@ -20,8 +19,9 @@ namespace GoFishCommon
 
         private TcpClient socket;
         private IFormatter serializer;
-        private ConcurrentQueue<RoomAction> writeQueue;
+        private ConcurrentQueue<String> writeQueue;
         private NetworkStream stream;
+        private MessageHandler handler;
 
         private int disconnectCalled;
 
@@ -29,27 +29,9 @@ namespace GoFishCommon
         {
             this.socket = socket;
             this.serializer = new BinaryFormatter();
-            this.writeQueue = new ConcurrentQueue<RoomAction>();
+            this.writeQueue = new ConcurrentQueue<String>();
             this.disconnectCalled = 0;
-        }
-
-        public void SendRooms(RoomList boards)
-        {
-            this.serializer.Serialize(stream, boards);
-        }
-
-        public RoomList ReceiveRooms()
-        {
-            object received = this.serializer.Deserialize(stream);
-            if (received is RoomList)
-            {
-                return (RoomList)received;
-            }
-            else
-            {
-                this.On_Client_Disconnected(this, null);
-                return null;
-            }
+            this.handler = new MessageHandler(socket.Client.LocalEndPoint.ToString() + ".txt");
         }
 
         public void AuthorizeAndConnect(String name)
@@ -57,10 +39,10 @@ namespace GoFishCommon
             try
             {
                 this.stream = socket.GetStream();
-                this.serializer.Serialize(stream, new Handshake(name));
-                Handshake received = (Handshake)this.serializer.Deserialize(stream);
-                this.Name = received.identifier;
-                this.On_Client_Connected(this, new GenericEventArgs<Handshake>(received));
+                this.serializer.Serialize(stream, handler.Send_ConnectMessage(name));
+                String received = (String)this.serializer.Deserialize(stream);
+                this.Name = handler.Recieve_ConnectMessage(received);
+                this.On_Client_Connected(this, new GenericEventArgs<String>(received));
             }
             catch (Exception e)
             {
@@ -91,8 +73,8 @@ namespace GoFishCommon
             {
                 try
                 {
-                    RoomAction action = (RoomAction)this.serializer.Deserialize(clientStream);
-                    this.On_Client_Received(this, new GenericEventArgs<RoomAction>(action));
+                    String message = (String)this.serializer.Deserialize(clientStream);
+                    this.On_Client_Received(this, new GenericEventArgs<String>(message));
                 }
                 catch (Exception e)
                 {
@@ -122,7 +104,7 @@ namespace GoFishCommon
             }
         }
 
-        public void Client_Sending(Object sender, GenericEventArgs<RoomAction> e)
+        public void Client_Sending(Object sender, GenericEventArgs<String> e)
         {
             this.writeQueue.Enqueue(e.GetInfo());
             this.writeAvailable.Set();
@@ -133,13 +115,13 @@ namespace GoFishCommon
         {
             while (socket.Connected)
             {
-                RoomAction action;
+                String message;
                 try
                 {
-                    action = this.writeQueue.Dequeue();
+                    message = this.writeQueue.Dequeue();
                     try
                     {
-                        this.serializer.Serialize(stream, action);
+                        this.serializer.Serialize(stream, message);
                     }
                     catch (Exception e)
                     {

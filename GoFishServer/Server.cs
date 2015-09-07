@@ -5,7 +5,6 @@ using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading;
 using System.Timers;
 using GoFishCommon;
-using RoomList = System.Collections.Generic.Dictionary<System.String, GoFishCommon.Room>;
 
 namespace GoFishServer
 {
@@ -17,7 +16,6 @@ namespace GoFishServer
     {
         public event Client_Sending_Handler On_Client_Sending;
         private ManualResetEvent listening = new ManualResetEvent(false);
-        private RoomList rooms;
         private readonly BinaryFormatter serializer;
         private int connectedClients;
         private int guestNumber = 0;
@@ -27,7 +25,6 @@ namespace GoFishServer
         public Server()
         {
             this.serializer = new BinaryFormatter();
-            this.rooms = new RoomList();
             this.connectedClients = 0;
             this.On_Client_Sending += delegate { }; //dummy client to get past checking for null (no clients connected)
         }
@@ -53,13 +50,6 @@ namespace GoFishServer
             {
                 Console.WriteLine(IP.ToString());
             }
-
-            //setup maintenance timer
-            int minutes = 60; // Int32.Parse(ConfigurationManager.AppSettings["maintenanceInterval"]);
-            double interval = TimeSpan.FromMinutes(minutes).TotalMilliseconds;
-            System.Timers.Timer maintenanceTimer = new System.Timers.Timer(interval);
-            maintenanceTimer.Elapsed += maintenanceTimer_Elapsed;
-            maintenanceTimer.Enabled = true;
 
             TcpListener listener = new TcpListener(IPAddress.Any, this.port);
             listener.Start();
@@ -91,34 +81,6 @@ namespace GoFishServer
         }
 
         /// <summary>
-        /// Event handler for the maintenance timer.
-        /// Runs maintenance on the server. (removes old rooms)
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        public void maintenanceTimer_Elapsed(object sender, ElapsedEventArgs e)
-        {
-            lock (this.rooms)
-            {
-                Console.WriteLine("=== Running Maintenance...");
-                foreach (Room room in this.rooms.Values)
-                {
-                    double daysSinceUsed = DateTime.Now.Subtract(room.LastUsed).TotalDays;
-                    double daysLimit = 7; // TimeSpan.FromDays(Double.Parse(ConfigurationManager.AppSettings["roomTTL"])).TotalDays;
-                    //Delete any rooms older than the limit (default is 7 days). Also should be empty. 
-                    if (daysSinceUsed > daysLimit && room.Users.Count == 0)
-                    {
-                        Console.WriteLine("Deleting {0}. Room is {1} days old", room.Name, daysSinceUsed);
-                        RoomAction action = new RoomAction.DeleteRoom(room.Owner, room.Name);
-                        action.Perform(this.rooms);
-                        this.On_Client_Sending(this, new GenericEventArgs<RoomAction>(action));
-                    }
-                }
-                Console.WriteLine("=== Maintenance finished...");
-            }
-        }
-
-        /// <summary>
         /// Event handler for client disconnecting.
         /// Will unsubscribe the proper events.
         /// and removes the client from all rooms that he was in.
@@ -130,19 +92,6 @@ namespace GoFishServer
             this.On_Client_Sending -= sender.Client_Sending;
             Interlocked.Decrement(ref this.connectedClients);
             //send a leave room action for each room the client was in.
-            lock (this.rooms)
-            {
-                foreach (Room room in this.rooms.Values)
-                {
-                    if (room.Users.Contains(sender.Name))
-                    {
-                        RoomAction action = new RoomAction.LeaveRoom(sender.Name, room.Name);
-                        action.Perform(this.rooms);
-                        this.On_Client_Sending(this, new GenericEventArgs<RoomAction>(action));
-                    }
-                }
-            }
-
             Console.WriteLine("Client disconnected {0}", sender.Name);
         }
 
@@ -153,13 +102,14 @@ namespace GoFishServer
         /// </summary>
         /// <param name="sender">Client that is connecting</param>
         /// <param name="e">the handshake (contains its name)</param>
-        public void Client_Connected(Client sender, GenericEventArgs<Handshake> e)
+        public void Client_Connected(Client sender, GenericEventArgs<String> e)
         {
-            sender.Name = e.GetInfo().identifier;
+            Console.WriteLine("Connected: " + e.GetInfo());
+            //sender.Name = e.GetInfo().identifier;
             if (!Interlocked.Equals(this.connectedClients, this.maxClients))
             {
                 Interlocked.Increment(ref this.connectedClients);
-                sender.SendRooms(rooms); //send all the rooms to the client
+                //sender.SendRooms(rooms); //send all the rooms to the client
                 this.On_Client_Sending += sender.Client_Sending; //subscribe to the send to all event
                 sender.StartUp();
                 Console.WriteLine("Client connected: {0}", sender.Name);
@@ -177,14 +127,16 @@ namespace GoFishServer
         /// </summary>
         /// <param name="sender">ClientReader Thread</param>
         /// <param name="e">RoomAction (hopefully)</param>
-        public void Client_Received(Client sender, GenericEventArgs<RoomAction> e)
+        public void Client_Received(Client sender, GenericEventArgs<String> e)
         {
-            RoomAction action = e.GetInfo();
+            String action = e.GetInfo();
+            Console.WriteLine(action);
+            //Send to action handler
             //if the action was succesfully validated and performed then send it to all currently connected clients.
-            if (action.Perform(this.rooms))
+            /*if (action.Perform(this.rooms))
             {
                 this.On_Client_Sending(this, new GenericEventArgs<RoomAction>(action));
-            }
+            }*/
         }
     }
 }
