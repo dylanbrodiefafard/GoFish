@@ -41,6 +41,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CardId.cs" />
+    <Compile Include="Exceptions\DirtyDeckException.cs" />
+    <Compile Include="Exceptions\DirtyHandException.cs" />
+    <Compile Include="Exceptions\HandLimitException.cs" />
+    <Compile Include="IPlayer.cs" />
+    <Compile Include="Player.cs" />
     <Compile Include="PlayingCards\CardIdentities.cs" />
     <Compile Include="PlayingCards\CardIdentity.cs" />
     <Compile Include="PlayingCards\CardSuit.cs" />
