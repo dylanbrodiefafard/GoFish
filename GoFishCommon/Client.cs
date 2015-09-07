@@ -133,17 +133,24 @@ namespace GoFishCommon
         {
             while (socket.Connected)
             {
-                RoomAction action = this.writeQueue.Dequeue();
+                RoomAction action;
                 try
                 {
-                    this.serializer.Serialize(stream, action);
+                    action = this.writeQueue.Dequeue();
+                    try
+                    {
+                        this.serializer.Serialize(stream, action);
+                    }
+                    catch (Exception e)
+                    {
+                        this.Disconnect();
+                        Console.WriteLine(e.Message);
+                    }
                 }
-                catch (Exception e)
+                catch (InvalidOperationException e)
                 {
-                    this.Disconnect();
-                    Console.WriteLine(e.Message);
+                    this.writeAvailable.WaitOne();
                 }
-        
                 //lets go to sleep until there is something to do
                 this.writeAvailable.WaitOne();
             }
