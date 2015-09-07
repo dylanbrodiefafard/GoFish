@@ -38,12 +38,12 @@ namespace GoFishCommon
             this.serializer.Serialize(stream, boards);
         }
 
-        public List<Room> ReceiveRooms()
+        public RoomList ReceiveRooms()
         {
             object received = this.serializer.Deserialize(stream);
-            if (received is List<Room>)
+            if (received is RoomList)
             {
-                return (List<Room>)received;
+                return (RoomList)received;
             }
             else
             {

@@ -16,6 +16,7 @@ namespace GoFishCommon
         private DateTime lastUsed;
         private Queue<String> messages;
         private Dictionary<String, DateTime> users;
+        private DeckBase<ICard> deck;
 
         public Room(String roomName, String owner)
         {
@@ -24,6 +25,12 @@ namespace GoFishCommon
             this.lastUsed = DateTime.Now;
             this.messages = new Queue<String>();
             this.users = new Dictionary<String, DateTime>();
+            //this.deck = new DeckBase<ICard>();
+        }
+
+        public string DrawCard(String user)
+        {
+            return "Test";
         }
 
         public void PostMessage(String user, String message)

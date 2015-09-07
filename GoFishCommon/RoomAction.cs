@@ -160,7 +160,17 @@ namespace GoFishCommon
                         if (toSend.Users.Contains(this.User))
                         {
                             DebugMessage();
-                            toSend.PostMessage(this.User, this.Message);
+                            String msg;
+                            if (this.Message == "gimmie card")
+                            {
+                                msg = toSend.DrawCard(this.User);
+                                toSend.PostMessage(this.User, msg);
+                            }
+                            else
+                            {
+                                toSend.PostMessage(this.User, this.Message);
+                            }
+                            
                             return true;
                         }
                     }
