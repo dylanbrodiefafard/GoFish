@@ -5,6 +5,8 @@ VisualStudioVersion = 14.0.23107.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GoFishCommon", "GoFishCommon\GoFishCommon.csproj", "{B36D1253-9773-43E1-8366-1D1B5878344E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GoFishServer", "GoFishServer\GoFishServer.csproj", "{76DC53B2-1432-428F-9A71-E5680B141766}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{B36D1253-9773-43E1-8366-1D1B5878344E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B36D1253-9773-43E1-8366-1D1B5878344E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B36D1253-9773-43E1-8366-1D1B5878344E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{76DC53B2-1432-428F-9A71-E5680B141766}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{76DC53B2-1432-428F-9A71-E5680B141766}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{76DC53B2-1432-428F-9A71-E5680B141766}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{76DC53B2-1432-428F-9A71-E5680B141766}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
