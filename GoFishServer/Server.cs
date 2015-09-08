@@ -27,11 +27,7 @@ namespace GoFishServer
             this.serializer = new BinaryFormatter();
             this.connectedClients = 0;
             this.On_Client_Sending += delegate { }; //dummy client to get past checking for null (no clients connected)
-            MessageHandler.Register_Processor("server", "connect", Process_Connect);
-            MessageHandler.Register_Processor("server", "joingame", Process_JoinGame);
-            MessageHandler.Register_Processor("server", "hostgame", Process_HostGame);
-            MessageHandler.Register_Processor("server", "drawcard", Process_DrawCard);
-            MessageHandler.Register_Processor("server", "disconnect", Process_Disconnect);
+            MessageHandler.Server_Register_Processor(this);
         }
 
         public static int Main(String[] args)
@@ -114,7 +110,6 @@ namespace GoFishServer
                 this.On_Client_Sending += sender.Client_Sending; //subscribe to the send to all event
                 sender.StartUp();
                 Console.WriteLine("Client connected: {0}", sender.Name);
-                this.On_Client_Sending(this, new GenericEventArgs<string>("server:connect:Dickwad"));
             }
             else
             {
@@ -133,6 +128,7 @@ namespace GoFishServer
         {
             String action = e.GetInfo();
             Console.WriteLine(action);
+            MessageHandler.Handle(action);
             //Send to action handler
             //if the action was succesfully validated and performed then send it to all currently connected clients.
             /*if (action.Perform(this.rooms))
@@ -141,12 +137,13 @@ namespace GoFishServer
             }*/
         }
 
-        public void Process_DrawCard(string payload)
+        public void Process_drawcard(string payload)
         {
-            throw new NotImplementedException();
+            Console.WriteLine("Process drawcard");
+            this.On_Client_Sending(this, new GenericEventArgs<string>("server:drawcard:6h"));
         }
 
-        public void Process_HostGame(string payload)
+        public void Process_hostgame(string payload)
         {
             if (game == null)
             {
@@ -160,7 +157,7 @@ namespace GoFishServer
             }
         }
 
-        public void Process_JoinGame(string payload)
+        public void Process_joingame(string payload)
         {
             if (game == null)
             {
@@ -173,16 +170,6 @@ namespace GoFishServer
                 // join game here
                 this.On_Client_Sending(this, new GenericEventArgs<string>("server:joingame:" + payload));
             }
-        }
-
-        public void Process_Connect(string payload)
-        {
-            this.On_Client_Sending(this, new GenericEventArgs<string>("server:connect:" + payload));
-        }
-
-        public void Process_Disconnect(string payload)
-        {
-            throw new NotImplementedException();
         }
     }
 }

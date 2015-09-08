@@ -7,10 +7,8 @@ namespace GoFishCommon
 {
     public interface IMessageProcessor
     {
-        void Process_DrawCard(String payload);
-        void Process_HostGame(String payload);
-        void Process_JoinGame(String payload);
-        void Process_Connect(String payload);
-        void Process_Disconnect(String payload);
+        void Process_drawcard(String payload);
+        void Process_hostgame(String payload);
+        void Process_joingame(String payload);
     }
 }

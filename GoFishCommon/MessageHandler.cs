@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Reflection;
 
 namespace GoFishCommon
 {
@@ -22,9 +23,29 @@ namespace GoFishCommon
             processors[source + type](payload);
         }
 
-        public static void Register_Processor(String source, String type, process_message processor)
+        public static void Server_Register_Processor(IMessageProcessor server)
         {
-            processors.Add(source + type, processor);
+            registerManager(server, "client");
+        }
+
+        public static void Client_Register_Processor(IMessageProcessor client)
+        {
+            registerManager(client, "server");
+        }
+
+        private static void registerManager(IMessageProcessor p, String source)
+        {
+            MethodInfo[] minfos = typeof(IMessageProcessor).GetMethods();
+            foreach (MethodInfo minfo in minfos)
+            {
+                Console.WriteLine(minfo.Name);
+                String methodName = minfo.Name;
+                String[] fields = methodName.Split('_');
+                String type = fields[1];
+
+                processors[source + type] = Delegate.CreateDelegate(typeof(process_message), p, minfo.Name) as process_message;// p.GetType().GetMethod(minfo.Name).DeclaringType;
+
+            }
         }
     }
 }
