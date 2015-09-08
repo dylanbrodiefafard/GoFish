@@ -21,13 +21,14 @@ namespace GoFishServer
         private readonly int maxClients = 4; // Int32.Parse(ConfigurationManager.AppSettings["maxClients"]);
         private readonly int port = 6657; // Int32.Parse(ConfigurationManager.AppSettings["port"]);
         private GoFishGame game;
-
+        private Random rng;
         public Server()
         {
             this.serializer = new BinaryFormatter();
             this.connectedClients = 0;
             this.On_Client_Sending += delegate { }; //dummy client to get past checking for null (no clients connected)
             MessageHandler.Server_Register_Processor(this);
+            rng = new Random();
         }
 
         public static int Main(String[] args)
@@ -140,7 +141,52 @@ namespace GoFishServer
         public void Process_drawcard(string payload)
         {
             Console.WriteLine("Process drawcard");
-            this.On_Client_Sending(this, new GenericEventArgs<string>("server:drawcard:6h"));
+            int rank = rng.Next(1, 13);
+            int suit = rng.Next(1, 4);
+
+
+            String card = "";
+            switch(rank)
+            {
+                case 13:
+                    card += "k";
+                    break;
+                case 12:
+                    card += "q";
+                    break;
+                case 11:
+                    card += "j";
+                    break;
+                case 1:
+                    card += "a";
+                    break;
+                case 10:
+                    card += "0";
+                    break;
+                default:
+                    card += rank.ToString();
+                    break;
+            }
+             
+            switch(suit)
+            {
+                case 1:
+                    card += "d";
+                    break;
+                case 2:
+                    card += "s";
+                    break;
+                case 3:
+                    card += "h";
+                    break;
+                case 4:
+                    card += "c";
+                    break;
+                default:
+                    card += "d";
+                    break;
+            }
+            this.On_Client_Sending(this, new GenericEventArgs<string>("server:drawcard:"+card));
         }
 
         public void Process_hostgame(string payload)
