@@ -3,7 +3,6 @@ using System.Net;
 using System.Net.Sockets;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading;
-using System.Timers;
 using GoFishCommon;
 
 namespace GoFishServer
@@ -12,7 +11,7 @@ namespace GoFishServer
     /// This class handles the communication between and management of clients.
     /// Maximum #of clients connected at once is specified in the App.config.
     /// </summary>
-    public class Server : IClientHandler
+    public class Server : IClientHandler, IMessageProcessor
     {
         public event Client_Sending_Handler On_Client_Sending;
         private ManualResetEvent listening = new ManualResetEvent(false);
@@ -21,12 +20,18 @@ namespace GoFishServer
         private int guestNumber = 0;
         private readonly int maxClients = 4; // Int32.Parse(ConfigurationManager.AppSettings["maxClients"]);
         private readonly int port = 6657; // Int32.Parse(ConfigurationManager.AppSettings["port"]);
+        private GoFishGame game;
 
         public Server()
         {
             this.serializer = new BinaryFormatter();
             this.connectedClients = 0;
             this.On_Client_Sending += delegate { }; //dummy client to get past checking for null (no clients connected)
+            MessageHandler.Register_Processor("server", "connect", Process_Connect);
+            MessageHandler.Register_Processor("server", "joingame", Process_JoinGame);
+            MessageHandler.Register_Processor("server", "hostgame", Process_HostGame);
+            MessageHandler.Register_Processor("server", "drawcard", Process_DrawCard);
+            MessageHandler.Register_Processor("server", "disconnect", Process_Disconnect);
         }
 
         public static int Main(String[] args)
@@ -91,7 +96,6 @@ namespace GoFishServer
         {
             this.On_Client_Sending -= sender.Client_Sending;
             Interlocked.Decrement(ref this.connectedClients);
-            //send a leave room action for each room the client was in.
             Console.WriteLine("Client disconnected {0}", sender.Name);
         }
 
@@ -104,15 +108,13 @@ namespace GoFishServer
         /// <param name="e">the handshake (contains its name)</param>
         public void Client_Connected(Client sender, GenericEventArgs<String> e)
         {
-            Console.WriteLine("Connected: " + e.GetInfo());
-            //sender.Name = e.GetInfo().identifier;
             if (!Interlocked.Equals(this.connectedClients, this.maxClients))
             {
                 Interlocked.Increment(ref this.connectedClients);
-                //sender.SendRooms(rooms); //send all the rooms to the client
                 this.On_Client_Sending += sender.Client_Sending; //subscribe to the send to all event
                 sender.StartUp();
                 Console.WriteLine("Client connected: {0}", sender.Name);
+                this.On_Client_Sending(this, new GenericEventArgs<string>("server:connect:Dickwad"));
             }
             else
             {
@@ -137,6 +139,50 @@ namespace GoFishServer
             {
                 this.On_Client_Sending(this, new GenericEventArgs<RoomAction>(action));
             }*/
+        }
+
+        public void Process_DrawCard(string payload)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Process_HostGame(string payload)
+        {
+            if (game == null)
+            {
+                String[] fields = payload.Split(',');
+                game = new GoFishGame(fields[0], Convert.ToInt32(fields[1]));
+                this.On_Client_Sending(this, new GenericEventArgs<string>("server:hostgame:" + payload));
+            }
+            else
+            {
+                this.On_Client_Sending(this, new GenericEventArgs<string>("server:hostgame:denied"));
+            }
+        }
+
+        public void Process_JoinGame(string payload)
+        {
+            if (game == null)
+            {
+                this.On_Client_Sending(this, new GenericEventArgs<string>("server:joingame:denied"));
+                
+            }
+            else
+            {
+                String[] fields = payload.Split(',');
+                // join game here
+                this.On_Client_Sending(this, new GenericEventArgs<string>("server:joingame:" + payload));
+            }
+        }
+
+        public void Process_Connect(string payload)
+        {
+            this.On_Client_Sending(this, new GenericEventArgs<string>("server:connect:" + payload));
+        }
+
+        public void Process_Disconnect(string payload)
+        {
+            throw new NotImplementedException();
         }
     }
 }

@@ -45,8 +45,10 @@
     <Compile Include="Exceptions\DirtyHandException.cs" />
     <Compile Include="Exceptions\HandLimitException.cs" />
     <Compile Include="GenericEventArgs.cs" />
+    <Compile Include="GoFishGame.cs" />
     <Compile Include="Handshake.cs" />
     <Compile Include="IClientHandler.cs" />
+    <Compile Include="IMessageProcessor.cs" />
     <Compile Include="IPlayer.cs" />
     <Compile Include="MessageHandler.cs" />
     <Compile Include="Player.cs" />

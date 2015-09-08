@@ -21,7 +21,6 @@ namespace GoFishCommon
         private IFormatter serializer;
         private ConcurrentQueue<String> writeQueue;
         private NetworkStream stream;
-        private MessageHandler handler;
 
         private int disconnectCalled;
 
@@ -31,7 +30,6 @@ namespace GoFishCommon
             this.serializer = new BinaryFormatter();
             this.writeQueue = new ConcurrentQueue<String>();
             this.disconnectCalled = 0;
-            this.handler = new MessageHandler(socket.Client.LocalEndPoint.ToString() + ".txt");
         }
 
         public void AuthorizeAndConnect(String name)
@@ -39,9 +37,9 @@ namespace GoFishCommon
             try
             {
                 this.stream = socket.GetStream();
-                this.serializer.Serialize(stream, handler.Send_ConnectMessage(name));
+                this.serializer.Serialize(stream, name);
                 String received = (String)this.serializer.Deserialize(stream);
-                this.Name = handler.Recieve_ConnectMessage(received);
+                this.Name = received;
                 this.On_Client_Connected(this, new GenericEventArgs<String>(received));
             }
             catch (Exception e)
@@ -116,9 +114,8 @@ namespace GoFishCommon
             while (socket.Connected)
             {
                 String message;
-                try
+                if (this.writeQueue.TryDequeue(out message))
                 {
-                    message = this.writeQueue.Dequeue();
                     try
                     {
                         this.serializer.Serialize(stream, message);
@@ -129,9 +126,10 @@ namespace GoFishCommon
                         Console.WriteLine(e.Message);
                     }
                 }
-                catch (InvalidOperationException e)
+                else
                 {
-                    this.writeAvailable.WaitOne();
+                    //causes the thread to block when wait one is called
+                    this.writeAvailable.Reset();
                 }
                 //lets go to sleep until there is something to do
                 this.writeAvailable.WaitOne();
@@ -142,87 +140,104 @@ namespace GoFishCommon
     internal class ConcurrentQueue<T> : ICollection, IEnumerable<T>
     {
 
-            private readonly Queue<T> _queue;
+        private readonly Queue<T> _queue;
 
-            public ConcurrentQueue()
-            {
-                _queue = new Queue<T>();
-            }
+        public ConcurrentQueue()
+        {
+            _queue = new Queue<T>();
+        }
 
-            public IEnumerator<T> GetEnumerator()
+        public IEnumerator<T> GetEnumerator()
+        {
+            lock (SyncRoot)
             {
-                lock (SyncRoot)
+                foreach (var item in _queue)
                 {
-                    foreach (var item in _queue)
-                    {
-                        yield return item;
-                    }
+                    yield return item;
                 }
             }
+        }
 
-            IEnumerator IEnumerable.GetEnumerator()
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+
+        public void CopyTo(Array array, int index)
+        {
+            lock (SyncRoot)
             {
-                return GetEnumerator();
+                ((ICollection)_queue).CopyTo(array, index);
             }
+        }
 
-            public void CopyTo(Array array, int index)
+        public int Count
+        {
+            get
             {
-                lock (SyncRoot)
+                // Assumed to be atomic, so locking is unnecessary
+                return _queue.Count;
+            }
+        }
+
+        public object SyncRoot
+        {
+            get { return ((ICollection)_queue).SyncRoot; }
+        }
+
+        public bool IsSynchronized
+        {
+            get { return true; }
+        }
+
+        public void Enqueue(T item)
+        {
+            lock (SyncRoot)
+            {
+                _queue.Enqueue(item);
+            }
+        }
+
+        public bool TryDequeue(out T action)
+        {
+            lock (SyncRoot)
+            {
+                if (_queue.Count == 0)
                 {
-                    ((ICollection)_queue).CopyTo(array, index);
+                    action = default(T);
+                    return false;
+                }
+                else
+                {
+                    action = _queue.Dequeue();
+                    return true;
                 }
             }
+        }
 
-            public int Count
+        public T Dequeue()
+        {
+            lock (SyncRoot)
             {
-                get
-                {
-                    // Assumed to be atomic, so locking is unnecessary
-                    return _queue.Count;
-                }
+                return _queue.Dequeue();
             }
+        }
 
-            public object SyncRoot
+        public T Peek()
+        {
+            lock (SyncRoot)
             {
-                get { return ((ICollection)_queue).SyncRoot; }
+                return _queue.Peek();
             }
+        }
 
-            public bool IsSynchronized
+        public void Clear()
+        {
+            lock (SyncRoot)
             {
-                get { return true; }
+                _queue.Clear();
             }
+        }
 
-            public void Enqueue(T item)
-            {
-                lock (SyncRoot)
-                {
-                    _queue.Enqueue(item);
-                }
-            }
-
-            public T Dequeue()
-            {
-                lock (SyncRoot)
-                {
-                    return _queue.Dequeue();
-                }
-            }
-
-            public T Peek()
-            {
-                lock (SyncRoot)
-                {
-                    return _queue.Peek();
-                }
-            }
-
-            public void Clear()
-            {
-                lock (SyncRoot)
-                {
-                    _queue.Clear();
-                }
-            }
-        
     }
 }

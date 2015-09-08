@@ -1,50 +1,30 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.IO;
 
 namespace GoFishCommon
 {
-    public class MessageHandler
+    public static class MessageHandler
     {
-        private StreamWriter logfile;
+        public const String denied = "denied";
+        public delegate void process_message(String message);
+        private static Dictionary<String, process_message> processors = new Dictionary<string, process_message>();
 
-        public MessageHandler(String logname)
+        public static void Handle(String message)
         {
-            try
-            {
-                logfile = new StreamWriter("logname");
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.Message);
-                Console.WriteLine("Unable to open " + logname + " for writing.");
-            }
+            if (message == null) throw new ArgumentNullException("Message can't be null.");
+            String[] fields = message.Split(':');
+            if (fields == null) throw new FormatException("Missing ':' separators.");
+            if (fields.Length < 3) throw new MissingFieldException("Missing payload field.");
+            String source = fields[0];
+            String type = fields[1];
+            String payload = fields[2];
+            if (!processors.ContainsKey(source + type)) throw new NotImplementedException("No processor registered for message: " + source + type + ".");
+            processors[source + type](payload);
         }
 
-        protected void DebugMessage(String message)
+        public static void Register_Processor(String source, String type, process_message processor)
         {
-            if (logfile != null) logfile.WriteLine("[" + DateTime.Now +"] " + message);
+            processors.Add(source + type, processor);
         }
-
-
-        public String Send_ConnectMessage(String name)
-        {
-            StringBuilder message = new StringBuilder();
-            message.Append("connect,");
-            message.Append(name);
-            DebugMessage(message.ToString());
-            return message.ToString();
-        }
-
-        public String Recieve_ConnectMessage(String message)
-        {
-            DebugMessage(message);
-            String[] fields = message.Split(',');
-            if (fields.Length > 1) return fields[2];
-            else return "default";
-        }
-        
     }
 }
